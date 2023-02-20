@@ -1,0 +1,521 @@
+---
+title: "PS-5"
+author: "Kush Patel"
+date: "2023-02-18"
+output: html_document
+---
+
+```{r Load Packages}
+library(tidyverse)
+library(ggpubr)
+```
+
+### Load and check data
+
+#### 2)
+```{r Load data}
+gapminder <- read_delim("gapminder.csv.bz2")
+
+num_rows <- nrow(gapminder)
+num_cols <- ncol(gapminder)
+```
+
+The gapminder dataset has `r num_rows` rows and `r num_cols` columns. 
+
+#### 3)
+```{r Print sample}
+gapminder %>%
+  sample_n(7)
+```
+
+The random sample of 7 lines of data looks OK. It has 7 rows and 
+25 columns, which is exactly what we would expect. 
+
+### Descriptive Statistics 
+
+#### 1)
+
+```{r number of countries}
+name_len <- length(unique(gapminder$name))
+iso2_len <- length(unique(gapminder$iso2))
+iso3_len <- length(unique(gapminder$iso3))
+```
+
+There are `r name_len` countries in the dataset. 
+
+#### 2)
+
+##### a)
+```{r iso2-name comparison}
+iso2_name <- gapminder %>%
+  select(name, iso2) %>%
+  group_by(iso2) %>%
+  summarize(Name_Num = length(unique(name)))
+
+iso2_name
+
+for(i in 1:length(iso2_name$iso2)) {
+  if(iso2_name$Name_Num[i] > 1) {
+    print(iso2_name$iso2[i])
+  }
+}
+```
+
+There is only 1 country for each iso-2 code. The only place where we find more
+than 1 values for an iso-2 code is when the code is NA. 
+
+##### b)
+```{r iso3-name comparison}
+iso3_name <- gapminder %>%
+  select(name, iso3) %>%
+  group_by(name) %>%
+  summarize(Iso3_Num = length(unique(iso3)))
+
+iso3_name
+
+for(i in 1:length(iso3_name$name)) {
+  if(iso3_name$Iso3_Num[i] > 1) {
+    print(iso3_name$name[i])
+  }
+}
+```
+
+There are no names that have more than one iso3-codes. The only place where
+we find more than 1 values for a name is when the name is NA. 
+However, it seems to be that the additional 4 values for iso3-codes come from
+two missing values, CHANISL and NLD CURACAO. 
+
+#### 3)
+```{r Max and min years}
+min_max_year <- gapminder %>%
+  select(time) %>%
+  filter(!(is.na(time))) %>%
+  summarize(min_year = min(time), max_year = max(time))
+
+min_max_year
+```
+
+The minimum year in the data is `r min_max_year$min_year` and the maximum year
+is `r min_max_year$max_year`. 
+
+### CO2 emissions
+
+#### 1)
+```{r Missing CO2 and CO2_PC values}
+missing_CO2_values <- gapminder %>%
+  group_by(time) %>%
+  summarize(missing_CO2 = sum(is.na(co2)))
+
+missing_CO2_PC_values <- gapminder %>%
+  group_by(time) %>%
+  summarize(missing_CO2_PC = sum(is.na(co2_PC)))
+
+max_missing_value_CO2 <- missing_CO2_values %>%
+  summarize(max_value = max(missing_CO2))
+
+max_missing_value_CO2_PC <- missing_CO2_PC_values %>%
+  summarize(max_value = max(missing_CO2_PC))
+
+missing_CO2_values
+
+missing_CO2_PC_values
+
+i <- missing_CO2_values$missing_CO2 == max_missing_value_CO2$max_value
+missing_CO2_values[i, ]
+
+j <- missing_CO2_PC_values$missing_CO2_PC == max_missing_value_CO2_PC$max_value
+missing_CO2_PC_values[j, ]
+
+```
+
+The years with the highest missing CO2 values were 2017, 2018, and 2019. 
+
+The years with the highest missing CO2_PC values were 2017, 2018, and 2019.
+
+#### 2)
+```{r The USA}
+usa <- gapminder %>%
+  filter(iso3 == "USA") %>%
+  filter(!(is.na(co2)))
+
+ggplot(usa) + 
+  geom_line(aes(x = usa$time, y = usa$co2)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions") +
+  ggtitle("CO2 emissions over time (USA)")
+```
+
+From the graph, we see that the CO2 emissions for the USA initially increase
+from 1960 to 1973(approx.), where they reached their first local maxima. After 
+that, they decreases for an year or two before reaching their second maxima in 
+1977(approx.). They reduces a little until 1982(approx.) before steadily 
+increasing until 2005(approx.). After that, they steadily decrease until 2019. 
+
+```{r China}
+china <- gapminder %>%
+  filter(iso3 == "CHN") %>%
+  filter(!(is.na(co2)))
+
+ggplot(china) + 
+  geom_line(aes(x = china$time, y = china$co2)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions") +
+  ggtitle("CO2 emissions over time (China)")
+```
+
+From the graph, we see that the CO2 emissions for China increase exponentially
+over time from 1960 to 2014(approx.), before reducing until 2019. 
+
+```{r India}
+india <- gapminder %>%
+  filter(iso3 == "IND") %>%
+  filter(!(is.na(co2)))
+
+ggplot(india) + 
+  geom_line(aes(x = india$time, y = india$co2)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions") +
+  ggtitle("CO2 emissions over time (India)")
+```
+
+From the graph, we see that CO2 emissions for India increase exponentially over
+time from 1960 to 2019. 
+
+```{r Indonesia}
+indonesia <- gapminder %>%
+  filter(iso3 == "IDN") %>%
+  filter(!(is.na(co2)))
+
+ggplot(indonesia) + 
+  geom_line(aes(x = indonesia$time, y = indonesia$co2)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions") +
+  ggtitle("CO2 emissions over time (Indonesia)")
+```
+
+From the graph, we see that CO2 emissions for Indonesia increase roughly 
+exponentially over time from 1960 to 2012(approx.) before taking a sharp turn 
+downwards from 2012 to 2015(approx.). After that they increase linearly until 
+2019. 
+
+```{r Iran}
+iran <- gapminder %>%
+  filter(iso3 == "IRN") %>%
+  filter(!(is.na(co2)))
+
+ggplot(iran) + 
+  geom_line(aes(x = iran$time, y = iran$co2)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions") +
+  ggtitle("CO2 emissions over time (Iran)")
+```
+
+From the graph, we see that CO2 emissions for Iran increase approximately 
+linearly over time, with the exception of a little dip in 1979(approx.) and 
+a little increase back up in 1996(approx.). 
+
+#### 3)
+```{r The USA CO2 per capita}
+usa_PC <- gapminder %>%
+  filter(iso3 == "USA") %>%
+  filter(!(is.na(co2_PC)))
+
+ggplot(usa_PC) + 
+  geom_line(aes(x = usa_PC$time, y = usa_PC$co2_PC)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions Per Capital") +
+  ggtitle("CO2 emissions per capita over time (USA)")
+```
+
+From the graph, we see that the CO2 emissions per capita for the USA has a 
+bimodal distribution. The first maxima occurs around the year 1975 and the 
+second occurs around the year 2000. 
+
+```{r China CO2 per capital}
+china_PC <- gapminder %>%
+  filter(iso3 == "CHN") %>%
+  filter(!(is.na(co2_PC)))
+
+ggplot(china_PC) + 
+  geom_line(aes(x = china_PC$time, y = china_PC$co2_PC)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions Per Capital") +
+  ggtitle("CO2 emissions per capita over time (China)")
+```
+
+From the graph, we see that the CO2 emissions per capita for China decrease
+initially, but then show a steady exponential increase until the year 
+2012(approx.) before decreasing slightly. 
+
+```{r India CO2 per capital}
+india_PC <- gapminder %>%
+  filter(iso3 == "IND") %>%
+  filter(!(is.na(co2_PC)))
+
+ggplot(india_PC) + 
+  geom_line(aes(x = india_PC$time, y = india_PC$co2_PC)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions Per Capital") +
+  ggtitle("CO2 emissions per capita over time (India)")
+```
+
+From the graph, we see that the CO2 emissions per capita for India increase
+exponentially over time from 1960 to 2019. 
+
+```{r Indonesia CO2 per capital}
+indonesia_PC <- gapminder %>%
+  filter(iso3 == "IDN") %>%
+  filter(!(is.na(co2_PC)))
+
+ggplot(indonesia_PC) + 
+  geom_line(aes(x = indonesia_PC$time, y = indonesia_PC$co2_PC)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions Per Capital") +
+  ggtitle("CO2 emissions per capita over time (Indonesia)")
+```
+
+From the graph, we see that the CO2 emissions per capita for Indonesia increase
+approximately exponentially, with the exception of some troughs and crests 
+along the way. The most significant dip occurs in 2013(approx.) before it 
+increases back up until 2019. 
+
+```{r Iran CO2 per capital}
+iran_PC <- gapminder %>%
+  filter(iso3 == "IRN") %>%
+  filter(!(is.na(co2_PC)))
+
+ggplot(iran_PC) + 
+  geom_line(aes(x = iran_PC$time, y = iran_PC$co2_PC)) +
+  labs(x = "Time (Years)", y = "CO2 Emissions Per Capital") +
+  ggtitle("CO2 emissions per capita over time (Iran)")
+```
+
+From the graph, we see that the CO2 emissions per capita for Iran increases
+initially from 1960 to 1975(approx.) before it decreases until 1981(approx.). 
+After that it increases approximately linearly until 2019. 
+
+#### 4)
+```{r Average CO2 emisions per capita for continents}
+avg_CO2_PC_continents <- gapminder %>%
+  select(region, co2_PC) %>%
+  filter(!(is.na(region)), !(is.na(co2_PC))) %>%
+  group_by(region) %>%
+  summarize(Avg_CO2_PC = mean(co2_PC))
+
+avg_CO2_PC_continents
+```
+
+From the table, we see that the average CO2 emission per capita is highest for 
+Europe with a value of 7.95 metric tons per capita. After Europe, Americas and 
+Asia are pretty close to each other with a value of 6.45 and 6.21 metric tons 
+per capita respectively. After them, Oceania has the highest CO2 emissions per
+capita with a value of 4.38 metric tons per capita. Africa has the lowest CO2
+emissions per capita with a value of 0.93 metric tons per capita. 
+
+#### 5)
+```{r Average CO2 per capita plot}
+time_given <- c(1960, 2016)
+
+gapminder %>%
+  select(time, co2_PC, region) %>%
+  filter(!(is.na(time)), !(is.na(co2_PC)), !(is.na(region)),
+         time %in% time_given) %>%
+  group_by(region, time) %>%
+  summarize(Avg_CO2_PC = mean(co2_PC)) %>%
+  ggplot(aes(x = region, y = Avg_CO2_PC, fill = factor(time))) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(x = "Continent", y = "Average CO2 per capita")
+```
+
+#### 6)
+```{r smallest and largest CO2 emitters}
+largest <- gapminder %>%
+  filter(!(is.na(region)),
+         !(is.na(name)), 
+         !(is.na(co2_PC))) %>%
+  group_by(name, region) %>%
+  summarize(total_CO2 = sum(co2_PC)) %>%
+  group_by(region) %>%
+  filter(rank(desc(total_CO2)) < 4) %>%
+  arrange(region, desc(total_CO2))
+
+largest
+
+smallest <- gapminder %>%
+  filter(!(is.na(region)),
+         !(is.na(name)), 
+         !(is.na(co2_PC))) %>%
+  group_by(name, region) %>%
+  summarize(total_CO2 = sum(co2_PC)) %>%
+  group_by(region) %>%
+  filter(rank(total_CO2) < 4) %>%
+  arrange(region, total_CO2)
+
+smallest
+```
+
+The tibbles generated give the three largest and the three smallest emitters
+of CO2 per capita for each continent. 
+
+### GDP per Capita
+#### 1)
+
+```{r gdp per capita vs life expectancy plot 1960}
+gapminder %>%
+  filter(!(is.na(name)),
+         !(is.na(region)),
+         !(is.na(GDP_PC)), 
+         !(is.na(lifeExpectancy)),
+         !(is.na(totalPopulation)),
+         time == 1960) %>%
+  group_by(name) %>%
+  ggplot(aes(x = lifeExpectancy, y = GDP_PC, colour = region, size = totalPopulation)) +
+  geom_point() +
+  labs(x = "Life Expectancy", y = "GDP per capita")
+```
+
+From the graph, we see that the life expectancy and GDP per capita of a country
+are exponentially related. 
+
+#### 2)
+```{r gdp per capita vs life expectancy plot 2019}
+gapminder %>%
+  filter(!(is.na(name)),
+         !(is.na(region)),
+         !(is.na(GDP_PC)), 
+         !(is.na(lifeExpectancy)),
+         !(is.na(totalPopulation)),
+         time == 2019) %>%
+  group_by(name) %>%
+  ggplot(aes(x = lifeExpectancy, y = GDP_PC, colour = region, size = totalPopulation)) +
+  geom_point() +
+  labs(x = "Life Expactancy", y = "GDP per capita")
+  
+```
+
+From the graph, we see that the life expectancy and GDP per capita of a country
+are exponentially related. 
+
+#### 3)
+When comparing the two previous graphs, we see the following major changes in 
+the world:
+
+a) The population of some countries in Asia grew drastically in comparison to 
+the populations of countries in other continents. 
+
+b) The life expectancy of almost all the countries grew over the given time 
+period. 
+
+c) The GDP per capita of almost all the countries seem to have grown over the 
+given time period as is seen by the increase in the scale used for the graph. 
+
+#### 4)
+
+```{r Average life expectancy of continents in 1960 and 2019}
+life_expectancy_1960 <- gapminder %>%
+  filter(!(is.na(region)), 
+         !(is.na(lifeExpectancy)),
+         time == 1960) %>%
+  group_by(region) %>%
+  summarize(LE = mean(lifeExpectancy))
+
+life_expectancy_1960
+
+life_expectancy_2019 <- gapminder %>%
+  filter(!(is.na(region)), 
+         !(is.na(lifeExpectancy)),
+         time == 2019) %>%
+  group_by(region) %>%
+  summarize(LE = mean(lifeExpectancy))
+
+life_expectancy_2019
+```
+
+Yes, the results in the tibbles fit with what we see in the figures. The life
+expectancy of all the continents increased over time. 
+
+#### 5)
+```{r growth of life expectancy}
+life_expectancy_growth <- gapminder %>%
+  select(region, lifeExpectancy, time) %>%
+  filter(!(is.na(region)), 
+         !(is.na(lifeExpectancy)), 
+         !(is.na(time))) %>%
+  group_by(region) %>%
+  arrange(time) %>%
+  mutate(growth = lifeExpectancy - lag(lifeExpectancy)) %>%
+  filter(!(is.na(growth))) %>%
+  summarize(Avg_growth = mean(growth))
+
+life_expectancy_growth
+```
+
+#### 6)
+
+```{r Histograms for GDP per capital for 1960 and 2019}
+histogram_1960 <- gapminder %>%
+  filter(time == 1960, 
+         !(is.na(GDP_PC))) %>%
+  ggplot(aes(x = GDP_PC)) +
+  geom_histogram() +
+  labs(x = "GDP per capita 1960")
+
+histogram_2019 <- gapminder %>%
+  filter(time == 2019, 
+         !(is.na(GDP_PC))) %>%
+  ggplot(aes(x = GDP_PC)) +
+  geom_histogram() +
+  labs(x = "GDP per capita 2019")
+
+histograms <- ggarrange(histogram_1960, histogram_2019, ncol = 2, nrow = 1)
+
+histograms
+```
+
+#### 7)
+
+```{r US rank}
+rankings_1960 <- gapminder %>%
+  select(name, time, lifeExpectancy) %>%
+  filter(!(is.na(name)), 
+         !(is.na(lifeExpectancy)), 
+         time == 1960) %>%
+  mutate(rank = rank(desc(lifeExpectancy))) %>%
+  arrange(rank)
+
+rankings_1960
+
+rankings_2019 <- gapminder %>%
+  select(name, time, lifeExpectancy) %>%
+  filter(!(is.na(name)), 
+         !(is.na(lifeExpectancy)), 
+         time == 2019) %>%
+  mutate(rank = rank(desc(lifeExpectancy))) %>%
+  arrange(rank)
+
+rankings_2019
+```
+
+The United States was ranked 17th in terms of life expectancy in 1960 and 46th
+in 2019. 
+
+#### 8)
+```{r relative rank}
+num_countries_1960 <- gapminder %>%
+  filter(time == 1960,
+         !(is.na(iso3))) %>%
+  summarize(num_countries = length(unique(iso3)))
+
+num_countries_2019 <- gapminder %>%
+  filter(time == 2019,
+         !(is.na(iso3))) %>%
+  summarize(num_countries = length(unique(iso3)))
+
+relative_1960_US <- 17/num_countries_1960$num_countries
+  
+relative_2019_US <- 46/num_countries_2019$num_countries
+
+relative_1960_US
+relative_2019_US
+```
+
+The US was relatively ranked `r relative_1960_US` in term of life expectancy in
+1960. 
+
+The US was relatively ranked `r relative_2019_US` in term of life expectancy in
+2019. 
+
+### How many hours did you spend on this PS.
+
+I spent 6 hours on this PS. 
